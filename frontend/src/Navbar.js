@@ -7,11 +7,13 @@ const Nav = styled.nav`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 15px 40px;
+  padding-left: 60px;
+  padding-right: 60px;
+  padding-top: 15px;
+  padding-bottom: 15px;
   background-color: white;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 `;
-
 const Logo = styled.h1`
   font-size: 1.5rem;
   color: #BD9FC1;
@@ -78,7 +80,7 @@ const SignInButton = styled(Button)`
 function Navbar() {
   return (
     <Nav>
-      <Logo>Influenz</Logo>
+      <Logo>SocialiQ</Logo>
       <NavLinks>
         <NavLink>Home</NavLink>
         <NavLink>Features</NavLink>

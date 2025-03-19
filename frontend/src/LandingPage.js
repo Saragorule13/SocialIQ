@@ -10,9 +10,11 @@ import { FaInstagram, FaYoutube, FaPinterest, FaFacebook, FaTwitter } from "reac
 const Container = styled.div`
   background-color: white;
   height: 100vh; /* Full screen height */
+  width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-x: hidden;
 `;
 
 const ContentWrapper = styled.div`
@@ -37,8 +39,8 @@ const LeftImage = styled(Image)`
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 350px;
-  max-width: 400px;
+  width: 450px;
+  max-width: 600px;
   z-index: 2;
 
   @media (max-width: 1024px) {
@@ -58,8 +60,8 @@ const RightImage = styled(Image)`
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 350px;
-  max-width: 400px; 
+  width: 450px;
+  max-width: 600px; 
   z-index: 2;
 
   @media (max-width: 1024px) {
@@ -78,7 +80,7 @@ const RightImage = styled(Image)`
 const RoundedContainer = styled.div`
   background-color: #BD9FC1;
   width: 90%;
-  max-width: 1100px;
+  max-width: 85vw;
   height: 65vh;
   padding: 60px;
   border-radius: 50px;
