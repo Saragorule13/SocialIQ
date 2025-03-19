@@ -18,6 +18,7 @@ const Logo = styled.h1`
   font-size: 1.5rem;
   color: #BD9FC1;
   font-weight: bold;
+  margin-left: 20px;
 `;
 
 const NavLinks = styled.ul`
@@ -40,6 +41,7 @@ const NavLink = styled.li`
 const Buttons = styled.div`
   display: flex;
   gap: 10px;
+  margin-right: 20px;
 `;
 
 // Styled button
