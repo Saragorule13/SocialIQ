@@ -99,6 +99,43 @@ async def chat(username: str, request: Query):
     )
     
     return (chat_completion.choices[0].message.content)
+
+@app.post("/chat/{username}")
+async def chat(username: str, request: Query):
+    results = list(cursor.find({"ownerUsername": username}, projection={"type": True, "caption": True, "commentsCount": True, "alt": True, "likesCount": True, "ownerFullName": True, "videoDuration": True, "videoViewCount": True, "videoPlayCount": True}))
+    knowledge = []
+    if not results:  
+        await root(username, 2) 
+        results = list(cursor.find({"ownerUsername": username}))  
+    if results:
+        for doc in results:
+            knowledge.append(doc)
+    else:
+        return "No posts found even after fetching."
+        
+    # print(knowledge)
+
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "system",
+                "content": f"you will solve the users queries about social media with your data {knowledge}."
+            },
+            {
+                "role": "user",
+                "content": f"{request}",
+            }
+        ],
+    
+        model="llama-3.3-70b-versatile",
+        temperature=0.7,
+        max_completion_tokens=1024,
+        top_p=1,
+        stop=None,
+        stream=False,
+    )
+    
+    return (chat_completion.choices[0].message.content)
     
 from statistics import mean
 
