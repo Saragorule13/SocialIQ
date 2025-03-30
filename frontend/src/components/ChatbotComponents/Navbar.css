@@ -1,0 +1,89 @@
+.Navbar{
+    background: #171717;
+    color: white;
+    min-height: 100vh;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 25px 15px;
+    /* align-items: center; */
+}
+
+.Navbar img{
+    width: 20px;
+}
+
+.menu{
+    display: block;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.new-chat{
+    margin-top: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background-color: #D2D2D2;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    color: grey;
+    /* width: 140px; */
+}
+
+.new-chat p{
+    text-wrap: nowrap;
+}
+
+.recent{
+    display: flex;
+    flex-direction: column;
+}
+
+.recent-title{
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+.recent-entry{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    padding-right: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #D9D9D9;
+    color: gray;
+}
+
+.recent-entry p{
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.recent-entry p:hover{
+    text-decoration: underline;
+}
+
+
+.bottom-item p:hover{
+    text-decoration: underline;
+}
+
+.mobile-ham{
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .Navbar{
+        display: none;
+    }
+
+    .mobile-ham{
+        display: flex;
+    }
+}
+

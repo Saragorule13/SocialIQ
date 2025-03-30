@@ -79,7 +79,7 @@ export default function Hero() {
 
         <div>
           <button className="w-[215px] h-[66px] bg-white rounded-[37px] border border-[#6b5e5e] cursor-pointer">
-            <a href="/dashboard">Get Started</a>
+            <a href="/user-info">Get Started</a>
           </button>
         </div>
 
