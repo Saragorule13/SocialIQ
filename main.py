@@ -1,6 +1,9 @@
 from apify_client import ApifyClient
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 from astrapy import DataAPIClient
+from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT, ProtocolVersion
+from cassandra.auth import PlainTextAuthProvider
 
 from groq import Groq
 from langchain.chat_models import init_chat_model
@@ -20,23 +23,40 @@ from transformers import pipeline
 
 import os
 import dotenv
+import json
+import requests
 
 dotenv.load_dotenv()
 
 client = ApifyClient(os.getenv("APIFY_API_TOKEN"))
 dbclient = DataAPIClient(os.getenv("ASTRA_DB_TOKEN"))
+
 db = dbclient.get_database_by_api_endpoint(
   "https://654d738f-1326-4e94-a2a0-cf79bd1ac826-us-east-2.apps.astra.datastax.com"
 )
+
 client = Groq()
 # llm = init_chat_model("deepseek-r1-distill-llama-70b", model_provider="groq", api_key=os.getenv("GROQ_API_KEY"))
 
 print(f"Connected to Astra DB: {db.list_collection_names()}")
 
 coll_cursor = db.list_collections()
+profile_cursor = db.get_collection("profiles")
 cursor = db.get_collection("posts")
+keyspace = "default_keyspace"
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/ping")
+def ping():
+    return {"message": "Pong"}
 
 @app.get("/fetch/{username}/{posts}")
 async def root(username: str, posts: int):
@@ -58,24 +78,24 @@ async def root(username: str, posts: int):
         if (result == None):
             cursor.insert_one(item, vectorize=item["id"])
         else:
-            print(f"Post is cached already! ({item["id"]})")
- 
+            print(f"Post is cached already! ({item['id']})")
+
 class Query(BaseModel):
     question: str
-    
+
 @app.get("/chat/{username}")
 async def chat(username: str, request: Query):
     results = list(cursor.find({"ownerUsername": username}, projection={"type": True, "caption": True, "commentsCount": True, "alt": True, "likesCount": True, "ownerFullName": True, "videoDuration": True, "videoViewCount": True, "videoPlayCount": True}))
     knowledge = []
-    if not results:  
-        await root(username, 2) 
-        results = list(cursor.find({"ownerUsername": username}))  
+    if not results:
+        await root(username, 2)
+        results = list(cursor.find({"ownerUsername": username}))
     if results:
         for doc in results:
             knowledge.append(doc)
     else:
         return "No posts found even after fetching."
-        
+
     # print(knowledge)
 
     chat_completion = client.chat.completions.create(
@@ -89,7 +109,7 @@ async def chat(username: str, request: Query):
                 "content": f"{request}",
             }
         ],
-    
+
         model="llama-3.3-70b-versatile",
         temperature=0.7,
         max_completion_tokens=1024,
@@ -97,22 +117,22 @@ async def chat(username: str, request: Query):
         stop=None,
         stream=False,
     )
-    
+
     return (chat_completion.choices[0].message.content)
 
 @app.post("/chat/{username}")
 async def chat(username: str, request: Query):
     results = list(cursor.find({"ownerUsername": username}, projection={"type": True, "caption": True, "commentsCount": True, "alt": True, "likesCount": True, "ownerFullName": True, "videoDuration": True, "videoViewCount": True, "videoPlayCount": True}))
     knowledge = []
-    if not results:  
-        await root(username, 2) 
-        results = list(cursor.find({"ownerUsername": username}))  
+    if not results:
+        await root(username, 2)
+        results = list(cursor.find({"ownerUsername": username}))
     if results:
         for doc in results:
             knowledge.append(doc)
     else:
         return "No posts found even after fetching."
-        
+
     # print(knowledge)
 
     chat_completion = client.chat.completions.create(
@@ -126,7 +146,7 @@ async def chat(username: str, request: Query):
                 "content": f"{request}",
             }
         ],
-    
+
         model="llama-3.3-70b-versatile",
         temperature=0.7,
         max_completion_tokens=1024,
@@ -134,9 +154,9 @@ async def chat(username: str, request: Query):
         stop=None,
         stream=False,
     )
-    
+
     return (chat_completion.choices[0].message.content)
-    
+
 from statistics import mean
 
 sentiment_pipeline = pipeline("sentiment-analysis")
@@ -145,10 +165,10 @@ sentiment_pipeline = pipeline("sentiment-analysis")
 async def analysis(username: str):
     results = list(cursor.find({"ownerUsername": username}, projection={"latestComments": True}))
     texts = [comment["text"] for doc in results for comment in doc.get("latestComments", []) if comment["text"].strip()]
-    
+
     if not texts:
         return {"error": "No valid comments found"}
-    
+
     sentiment_scores = sentiment_pipeline(texts)
 
     positive_scores = [s["score"] for s in sentiment_scores if s["label"] == "POSITIVE"]
@@ -160,7 +180,7 @@ async def analysis(username: str):
         "average_negative_sentiment": mean(negative_scores) if negative_scores else 0,
         "count_negative": len(negative_scores)
     }
-    
+
     chat_completion = client.chat.completions.create(
         messages=[
             {
@@ -172,7 +192,7 @@ async def analysis(username: str):
                 "content": f"{scores}",
             }
         ],
-    
+
         model="llama-3.3-70b-versatile",
         temperature=0.7,
         max_completion_tokens=1024,
@@ -180,5 +200,65 @@ async def analysis(username: str):
         stop=None,
         stream=False,
     )
-    
+
     return (chat_completion.choices[0].message.content)
+
+
+cloud_config= {
+    'secure_connect_bundle': "Secure Connect SocialQ.zip",
+    'connect_timeout': 30
+}
+auth_provider=PlainTextAuthProvider("token", os.getenv("ASTRA_DB_APPLICATION_TOKEN"))
+profile = ExecutionProfile(request_timeout=30)
+cluster = Cluster(
+    cloud=cloud_config,
+    auth_provider=auth_provider,
+    execution_profiles={EXEC_PROFILE_DEFAULT: profile},
+    protocol_version=ProtocolVersion.V4
+)
+session = cluster.connect()
+
+class UserRequest(BaseModel):
+    username: str
+
+@app.post("/insert")
+async def insert(user: UserRequest):
+    try:
+        result = profile_cursor.find_one(
+            {"username": user.username},
+            projection={"profilePicUrl": 1, "_id": 0}
+        )
+
+        result = dict(result)["profilePicUrl"]
+        print(result)
+
+        if result == None:
+            return {"error": "User not found!"}
+
+        response = requests.get(result)
+        image_data = response.content
+
+        insert_query = session.prepare("INSERT INTO default_keyspace.images (id, image) VALUES (?, ?)")
+        session.execute(insert_query, (user.username, image_data))
+
+        return (result)
+
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+    return 1
+
+@app.get("/image/{username}")
+async def get_image(username: str):
+    try:
+        query = "SELECT image FROM default_keyspace.images WHERE id = %s"
+        result = session.execute(query, [username]).one()
+
+        if result and result.image:
+            return Response(content=bytes(result.image), media_type="image/jpeg")
+
+        return {"error": "Image not found"}
+
+    except Exception as e:
+        return {"error": str(e)}
