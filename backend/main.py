@@ -17,13 +17,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = ApifyClient(os.getenv("REACT_APIFY_TOKEN"))
+client = ApifyClient(os.getenv("APIFY_API_TOKEN"))
 dbclient = DataAPIClient(os.getenv("ASTRA_DB_TOKEN"))
 db = dbclient.get_database_by_api_endpoint("https://654d738f-1326-4e94-a2a0-cf79bd1ac826-us-east-2.apps.astra.datastax.com")
 collection = db.get_collection("posts")
 profiles_collection = db.get_collection("profiles")
 
-@app.get("/fetch-and-store-profile")
+@app.get("/fetch-and-store-profile/{username}")
 async def fetch_and_store_profile(username: str):
     try:
         run_input = {"usernames": [username]}  
@@ -38,11 +38,29 @@ async def fetch_and_store_profile(username: str):
                 profile_id = item["id"] 
                 existing_profile = profiles_collection.find_one({"id": profile_id})
 
+                filtered_item = {
+                    "id": item["id"],
+                    "username": item["username"],
+                    "full_name": item.get("full_name"),
+                    "followersCount": item.get("followersCount"),
+                    "followsCount": item.get("followsCount"),
+                    "bio": item.get("biography"),
+                    "hasChannel": item.get("hasChannel"),
+                    "highlightReelCount": item.get("highlightReelCount"),
+                    "isBusinessAccount": item.get("isBusinessAccount"),
+                    "businessCategoryName": item.get("businessCategoryName"),
+                    "private": item.get("Private"),
+                    "verified": item.get("Verified"),
+                    "profilePicUrl" : item.get("profilePicUrl"),
+                    "profilePicUrlHD": item.get("profilePicUrlHD"),
+                    "igtvVideoCount": item.get("igtvVideoCount"),
+                }
+
                 if not existing_profile:  
-                    profiles_collection.insert_one(item)  
-                    results.append({"status": "stored", "data": item})
+                    profiles_collection.insert_one(filtered_item)  
+                    results.append({"status": "stored", "data": filtered_item})
                 else:
-                    results.append({"status": "already exists", "data": item})
+                    results.append({"status": "already exists", "data": filtered_item})
 
         if not results:
             return {"error": "No exact match found for this username."}
@@ -51,12 +69,30 @@ async def fetch_and_store_profile(username: str):
 
     except Exception as e:
         return {"error": str(e)}
+
  
+ 
+@app.get("/get-profile/{username}")
+async def get_profile(username: str):
+    try:
+        # Fetch the profile from the database
+        profile = profiles_collection.find_one({"username": username})
+        
+        if not profile:
+            return {"error": "Profile not found."}
+        
+        # Convert the profile to a JSON-serializable format
+        profile["_id"] = str(profile["_id"])  # Convert ObjectId to string
+        return {"data": profile}
+    
+    except Exception as e:
+        return {"error": str(e)}
 
 
-@app.get("/get-data")
-async def get_data():
-    documents = collection.find({"ownerUsername" : "taylorswift"})
+
+@app.get("/get-data/{username}")
+async def get_data(username: str):
+    documents = collection.find({"ownerUsername" : [username]})
     posts = [doc for doc in documents]
     return {"data" : posts}
 

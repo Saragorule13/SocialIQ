@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -6,34 +6,53 @@ export default function Mainboard() {
   const [username, setUsername] = useState("");
   const [accounts, setAccounts] = useState([]);
   const [alertMessage, setAlertMessage] = useState("");
-  const [loading, setLoading] = useState(false); // New state for loading
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Load accounts from local storage when the component mounts
+  useEffect(() => {
+    const savedAccounts = localStorage.getItem("accounts");
+    if (savedAccounts) {
+      setAccounts(JSON.parse(savedAccounts));
+    }
+  }, []);
+
+  // Save accounts to local storage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("accounts", JSON.stringify(accounts));
+  }, [accounts]);
 
   const handleRowClick = (account) => {
     navigate(`/dashboard/${account.username}`);
   };
 
+  const handleDelete = (usernameToDelete) => {
+    // Remove the account from the list
+    const updatedAccounts = accounts.filter(
+      (account) => account.username !== usernameToDelete
+    );
+    setAccounts(updatedAccounts);
+    setAlertMessage(`Account "${usernameToDelete}" has been deleted.`);
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent form submission
+    e.preventDefault();
 
     if (!username.trim()) {
       setAlertMessage("Please enter a valid username.");
       return;
     }
 
-    setLoading(true); // Start loading animation
+    setLoading(true);
 
     try {
-      // Check if the username already exists in the database
       const existingProfileResponse = await axios.get(
         `http://127.0.0.1:8000/get-profiles/${username}`
       );
 
       if (existingProfileResponse.data.data.length > 0) {
-        // If the username already exists, show an alert
         setAlertMessage("This username already exists in the database.");
       } else {
-        // If the username does not exist, fetch and store the profile
         const fetchResponse = await axios.get(
           `http://127.0.0.1:8000/fetch-and-store-profile/${username}`
         );
@@ -52,10 +71,10 @@ export default function Mainboard() {
       console.error("Error fetching profile:", error);
       setAlertMessage("An error occurred while fetching the profile.");
     } finally {
-      setLoading(false); // Stop loading animation
+      setLoading(false);
     }
 
-    setUsername(""); // Clear the input field
+    setUsername("");
   };
 
   return (
@@ -67,7 +86,6 @@ export default function Mainboard() {
 
       {/* Input and Button */}
       <form onSubmit={handleSubmit} className="flex justify-between gap-2">
-        {/* Input Field */}
         <div className="flex-1">
           <input
             type="text"
@@ -80,7 +98,7 @@ export default function Mainboard() {
         <button
           type="submit"
           className="bg-white p-2 rounded-md text-black flex items-center justify-center"
-          disabled={loading} // Disable button while loading
+          disabled={loading}
         >
           {loading ? (
             <div className="loader border-t-2 border-b-2 border-gray-900 w-4 h-4 rounded-full animate-spin"></div>
@@ -92,14 +110,19 @@ export default function Mainboard() {
 
       {/* Alert Message */}
       {alertMessage && (
-        <div className="mt-4 p-2 bg-yellow-500 text-black rounded-md">
-          {alertMessage}
+        <div className="mt-4 p-2 bg-yellow-500 text-black rounded-md flex justify-between items-center">
+          <span>{alertMessage}</span>
+          <button
+            onClick={() => setAlertMessage("")} // Clear the alert message
+            className="text-black font-bold px-2 hover:text-red-600"
+          >
+            X
+          </button>
         </div>
       )}
 
       {/* Main Table Section */}
       <div className="p-6 bg-white dark:bg-neutral-900">
-        {/* Table */}
         <div className="bg-white dark:bg-neutral-800 rounded-lg border border-gray-200/30 dark:border-neutral-700/30 overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-100 dark:bg-neutral-800 text-left">
@@ -110,6 +133,7 @@ export default function Mainboard() {
                   "Following Count",
                   "Media Count",
                   "Engagement Rate",
+                  "Actions",
                 ].map((header, index) => (
                   <th
                     key={index}
@@ -122,12 +146,28 @@ export default function Mainboard() {
             </thead>
             <tbody>
               {accounts.map((account, index) => (
-                <tr key={index} onClick={() => handleRowClick(account)} className="border-t dark:border-neutral-700">
-                  <td className="px-6 py-4">{account.username}</td>
+                <tr
+                  key={index}
+                  className="border-t dark:border-neutral-700 cursor-pointer hover:bg-gray-200 dark:hover:bg-neutral-700"
+                >
+                  <td
+                    className="px-6 py-4"
+                    onClick={() => handleRowClick(account)}
+                  >
+                    {account.username}
+                  </td>
                   <td className="px-6 py-4">{account.followersCount || "0"}</td>
                   <td className="px-6 py-4">{account.followsCount || "0"}</td>
                   <td className="px-6 py-4">{account.postsCount || "0"}</td>
                   <td className="px-6 py-4">{account.engagement || "85%"}</td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => handleDelete(account.username)}
+                      className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
