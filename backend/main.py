@@ -54,6 +54,7 @@ async def fetch_and_store_profile(username: str):
                     "profilePicUrl" : item.get("profilePicUrl"),
                     "profilePicUrlHD": item.get("profilePicUrlHD"),
                     "igtvVideoCount": item.get("igtvVideoCount"),
+                    "postsCount": item.get("postsCount"),
                 }
 
                 if not existing_profile:  
@@ -72,7 +73,7 @@ async def fetch_and_store_profile(username: str):
 
  
  
-@app.get("/get-profile/{username}")
+@app.get("/get-profiles/{username}")
 async def get_profile(username: str):
     try:
         # Fetch the profile from the database

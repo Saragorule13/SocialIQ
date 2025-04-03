@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import assets from "../../assets/assets";
 import './Chat.css';
+import { useParams } from "react-router-dom";
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -9,6 +10,7 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [showMainContainer, setShowMainContainer] = useState(true);
   const chatMessagesRef = useRef(null);
+  const username = useParams().username;
 
   // Auto-scroll to bottom when messages update
   useEffect(() => {
@@ -24,37 +26,43 @@ export default function Chat() {
     setMessages((prev) => [...prev, { role: "user", content: userInput }]);
     setLoading(true);
   
+    console.log("Sending request to:", `http://127.0.0.1:8000/chat/${username}`);
+    console.log("With payload:", { question: userInput });
+  
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/chat/taylorswift`,
+      const response = await axios.post(
+        `http://127.0.0.1:8000/chat/${username}`,
+        { question: userInput },
         {
-          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ question: userInput }),
         }
       );
   
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Request failed");
-      }
+      console.log("Received response:", response);
+      console.log("Response data:", response.data);
   
-      const data = await response.json();
-      // Access the 'answer' field from FastAPI response
-      setMessages((prev) => [...prev, { role: "bot", content: data.answer }]);
+      // Try both formats since your backend might return different structures
+      const botResponse = response.data.answer || response.data;
+      setMessages((prev) => [...prev, { role: "bot", content: botResponse }]);
+      
     } catch (error) {
       console.error("Full error:", error);
-      setMessages((prev) => [
-        ...prev,
-        { 
-          role: "bot", 
-          content: error.message.includes("Failed to fetch") 
-            ? "Connection error - check if backend is running" 
-            : error.message 
-        },
-      ]);
+      console.error("Error response:", error.response);
+      
+      let errorMessage = "An error occurred";
+      if (error.response) {
+        errorMessage = error.response.data?.detail || 
+                     error.response.statusText || 
+                     JSON.stringify(error.response.data);
+      } else if (error.request) {
+        errorMessage = "No response received from server";
+      } else {
+        errorMessage = error.message;
+      }
+      
+      setMessages((prev) => [...prev, { role: "bot", content: errorMessage }]);
     } finally {
       setLoading(false);
       setUserInput("");
@@ -71,7 +79,7 @@ export default function Chat() {
         )}
 
         <div 
-          className="chat-messages flex flex-col gap-4 overflow-y-auto"
+          className="chat-messages flex flex-col p-10 gap-4 overflow-y-auto"
           ref={chatMessagesRef}
         >
           {messages.map((message, index) => (

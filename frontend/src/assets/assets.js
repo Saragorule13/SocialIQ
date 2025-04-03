@@ -18,6 +18,7 @@ import settings_icon from './settings.svg'
 import jarvis from './Jarvis.png'
 import jarvis_logo from './jarvis_logo.jpg'
 import user_logo from './user.png'
+import image1 from './analyze-large.webp'
 
 const assets = {
     facebook_logo,
@@ -39,7 +40,8 @@ const assets = {
     settings_icon,
     jarvis,
     jarvis_logo,
-    user_logo
+    user_logo,
+    image1,
 }
 
 export default assets;

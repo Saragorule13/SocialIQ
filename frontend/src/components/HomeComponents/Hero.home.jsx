@@ -1,106 +1,112 @@
 import React from "react";
+import { motion } from "framer-motion";
 import assets from "../../assets/assets";
+import { cn } from "../../libs/utils";
+import { Spotlight } from "../ui/Spotlight";
 
 export default function Hero() {
   return (
-    <div className="h-[90vh] pt-0 pl-[30px] pr-[30px] pb-[30px]">
-      <div className="bg-[#bd9fc0] h-full rounded-[45px] flex flex-col items-center justify-center gap-5 relative">
+    <div className="relative flex h-[40rem] w-full overflow-hidden bg-black/[0.96] antialiased md:items-center md:justify-center">
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 [background-size:40px_40px] select-none",
+          "[background-image:linear-gradient(to_right,#171717_1px,transparent_1px),linear-gradient(to_bottom,#171717_1px,transparent_1px)]"
+        )}
+      />
+
+      <Spotlight
+        className="-top-40 left-0 md:-top-20 md:left-60"
+        fill="white"
+      />
+      <div className="flex flex-col items-center justify-center gap-4 px-4 text-center text-white md:gap-8 md:px-0">
         <div className="flex gap-[48px]">
-          <img
+          {/* Floating Social Icons */}
+          <motion.img
             className="w-[48px] h-[48px]"
             src={assets.facebook_logo}
-            alt=""
+            alt="Facebook"
+            initial={{ y: 0 }}
+            animate={{ y: [0, -10, 0] }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           />
-          <img
+          <motion.img
             className="w-[48px] h-[48px]"
             src={assets.instagram_logo}
-            alt=""
+            alt="Instagram"
+            initial={{ y: 0 }}
+            animate={{ y: [0, -10, 0] }}
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           />
-          <img
+          <motion.img
             className="w-[48px] h-[48px]"
             src={assets.pinterest_logo}
-            alt=""
+            alt="Pinterest"
+            initial={{ y: 0 }}
+            animate={{ y: [0, -10, 0] }}
+            transition={{
+              duration: 2.4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           />
-          <img className="w-[48px] h-[48px]" src={assets.tiktok_logo} alt="" />
-          <img className="w-[48px] h-[48px]" src={assets.youtube_logo} alt="" />
-          <img className="w-[48px] h-[48px]" src={assets.twitter_logo} alt="" />
-        </div>
-
-        {/* <div className='w-[1155px] text-center text-[64px] font-semibold text-white leading-18'>
-          <p>Manage all your <span>Socials</span> at <span>one place</span> using <span>Social</span>IQ</p>
-        </div> */}
-
-        <div className="maintext w-[1155px] text-center">
-          <span class="text-white text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            Manage all your
-          </span>
-          <span class="text-black text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            {" "}
-          </span>
-          <span class="text-white/0 text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            S
-          </span>
-          <span class="text-black/0 text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            ocials
-          </span>
-          <span class="text-black text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            {" "}
-          </span>
-          <span class="text-white text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            at
-          </span>
-          <span class="text-black text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            {" "}
-          </span>
-          <span class="text-black/0 text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            one place
-          </span>
-          <span class="text-black text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            {" "}
-          </span>
-          <span class="text-white text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            with
-          </span>
-          <span class="text-black text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            {" "}
-          </span>
-          <span class="text-black/0 text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            Social
-          </span>
-          <span class="text-white text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            IQ
-          </span>
-          <span class="text-black/0 text-[64px] font-semibold font-['Poppins'] leading-[65.28px]">
-            {" "}
-          </span>
-        </div>
-
-        {/* get started button */}
-
-        <div>
-          <button className="w-[215px] h-[66px] bg-white rounded-[37px] border border-[#6b5e5e] cursor-pointer">
-            <a href="/user-info">Get Started</a>
-          </button>
-        </div>
-
-        {/* illustrations  */}
-        <div className="overflow-hidden absolute left-0 bottom-0 w-[265px] h-[300px] hidden md:block">
-          <img
-            className="w-full h-full object-cover"
-            src={assets.illustration1}
-            alt=""
+          <motion.img
+            className="w-[48px] h-[48px]"
+            src={assets.tiktok_logo}
+            alt="TikTok"
+            initial={{ y: 0 }}
+            animate={{ y: [0, -10, 0] }}
+            transition={{
+              duration: 2.6,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.img
+            className="w-[48px] h-[48px]"
+            src={assets.youtube_logo}
+            alt="YouTube"
+            initial={{ y: 0 }}
+            animate={{ y: [0, -10, 0] }}
+            transition={{
+              duration: 2.8,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.img
+            className="w-[48px] h-[48px]"
+            src={assets.twitter_logo}
+            alt="Twitter"
+            initial={{ y: 0 }}
+            animate={{ y: [0, -10, 0] }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
           />
         </div>
-
-        <div className="overflow-hidden absolute right-0 bottom-0 w-[300px] h-[350px] hidden md:block">
-          <img
-            className="w-full h-full object-cover"
-            src={assets.illustration2}
-            alt=""
-          />
+        <div className="relative z-10 mx-auto w-full max-w-7xl p-4 pt-20 md:pt-0">
+          <h1 className="bg-opacity-50 bg-gradient-to-b from-neutral-50 to-neutral-400 bg-clip-text text-center text-4xl font-bold text-transparent md:text-7xl">
+            Manage all your socials <br /> at one place
+          </h1>
+          <div className="flex justify-center font-bold gap-4 pt-8 md:gap-8">
+            <button className="bg-white text-black p-4 rounded-full">
+              Get Started
+            </button>
+            <button className="bg-white text-black p-4 rounded-full">
+              Link your account
+            </button>
+          </div>
         </div>
-
-        {/* <img className="absolute right-0 w-[362.45px] h-[485.36px] bottom-[-120px] overflow-hidden" src={assets.illustration2} alt="" /> */}
       </div>
     </div>
   );

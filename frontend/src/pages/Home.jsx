@@ -4,7 +4,7 @@ import Hero from '../components/HomeComponents/Hero.home'
 
 function Home() {
   return (
-    <div>
+    <div className='bg-black'>
       <Navbar/>
       <Hero/>
     </div>

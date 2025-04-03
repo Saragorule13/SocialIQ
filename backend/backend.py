@@ -35,7 +35,7 @@ app.add_middleware(
 )
 
 client = ApifyClient(os.getenv("APIFY_API_TOKEN"))
-dbclient = DataAPIClient(os.getenv("ASTRA_DB_TOKEN"))
+dbclient = DataAPIClient("AstraCS:IEsGrZCUZIUTuJXDckHGJWEg:76f5c96c82c3f8cfc1018038ab3fc882457e8c718236b73736904cc26ade0ba1")
 db = dbclient.get_database_by_api_endpoint(
   "https://654d738f-1326-4e94-a2a0-cf79bd1ac826-us-east-2.apps.astra.datastax.com"
 )
@@ -47,10 +47,11 @@ print(f"Connected to Astra DB: {db.list_collection_names()}")
 coll_cursor = db.list_collections()
 cursor = db.get_collection("posts")
 profiles_collection = db.get_collection("profiles")
+keyspace = "default_keyspace"
 
 #to fetch profiles
 
-@app.get("/fetch-and-store-profile")
+@app.get("/fetch-and-store-profile/{username}")
 async def fetch_and_store_profile(username: str):
     try:
         run_input = {"usernames": [username]}  
@@ -78,6 +79,29 @@ async def fetch_and_store_profile(username: str):
 
     except Exception as e:
         return {"error": str(e)}
+    
+@app.get("/get-profiles/{username}")
+async def get_profile(username: str):
+    try:
+        # Fetch the profile from the database
+        profile = profiles_collection.find_one({"username": username})
+        
+        if not profile:
+            return {"error": "Profile not found."}
+        
+        # Convert the profile to a JSON-serializable format
+        profile["_id"] = str(profile["_id"])  # Convert ObjectId to string
+        return {"data": profile}
+    
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.get("/get-data/{username}")
+async def get_data(username: str):
+    documents = cursor.find({"ownerUsername" : [username]})
+    posts = [doc for doc in documents]
+    return {"data" : posts}
+
  
 
 #to fetch posts
@@ -106,46 +130,9 @@ async def root(username: str, posts: int):
 class Query(BaseModel):
     question: str
     
-# @app.get("/chat/{username}")
-# async def chat(username: str, request: Query):
-#     results = list(cursor.find({"ownerUsername": username}, projection={"type": True, "caption": True, "commentsCount": True, "alt": True, "likesCount": True, "ownerFullName": True, "videoDuration": True, "videoViewCount": True, "videoPlayCount": True}))
-#     knowledge = []
-#     if not results:  
-#         await root(username, 2) 
-#         results = list(cursor.find({"ownerUsername": username}))  
-#     if results:
-#         for doc in results:
-#             knowledge.append(doc)
-#     else:
-#         return "No posts found even after fetching."
-        
-#     # print(knowledge)
-
-#     chat_completion = client_g.chat.completions.create(
-#         messages=[
-#             {
-#                 "role": "system",
-#                 "content": f"you will solve the users queries about social media with your data {knowledge}."
-#             },
-#             {
-#                 "role": "user",
-#                 "content": f"{request}",
-#             }
-#         ],
-    
-#         model="llama-3.3-70b-versatile",
-#         temperature=0.7,
-#         max_completion_tokens=1024,
-#         top_p=1,
-#         stop=None,
-#         stream=False,
-#     )
-    
-#     return (chat_completion.choices[0].message.content)
-
 
 @app.post("/chat/{username}")
-@app.options("/chat/taylorswift")
+@app.options("/chat/{username}")
 async def chat(username: str, request: Query):
     results = list(cursor.find({"ownerUsername": username}, projection={"type": True, "caption": True, "commentsCount": True, "alt": True, "likesCount": True, "ownerFullName": True, "videoDuration": True, "videoViewCount": True, "videoPlayCount": True}))
     knowledge = []
@@ -181,6 +168,9 @@ async def chat(username: str, request: Query):
     )
     
     return (chat_completion.choices[0].message.content)
+
+
+
     
 from statistics import mean
 
@@ -227,3 +217,4 @@ async def analysis(username: str):
     )
     
     return (chat_completion.choices[0].message.content)
+

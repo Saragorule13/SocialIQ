@@ -10,14 +10,14 @@ const ProfileCard = () => {
     axios.get(`http://127.0.0.1:8000/get-profiles/${username}`)
       .then((response) => {
         console.log("API Response:", response.data);
-        if (response.data.data && response.data.data.length > 0) {
-          setProfile(response.data.data[0]);  // Assuming one profile
+        if (response.data.data) {
+          setProfile(response.data.data); // Set the profile directly
         }
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
       });
-  }, []);
+  }, [username]);
 
   if (!profile) {
     return <p className="text-center text-gray-500">Loading profile...</p>;
