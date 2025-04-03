@@ -1,30 +1,24 @@
 from apify_client import ApifyClient
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+
 from astrapy import DataAPIClient
 from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT, ProtocolVersion
 from cassandra.auth import PlainTextAuthProvider
 
 from groq import Groq
-from langchain.chat_models import init_chat_model
-from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import UnstructuredMarkdownLoader
-from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
-from langchain import hub
-from langgraph.graph import START, StateGraph
 
 from pydantic.main import BaseModel
-from typing_extensions import List, TypedDict
 
 from transformers import pipeline
+import whisper
 
 import os
+import re
+import io
 import dotenv
-import json
 import requests
+
 
 dotenv.load_dotenv()
 
@@ -205,7 +199,7 @@ async def analysis(username: str):
 
 
 cloud_config= {
-    'secure_connect_bundle': "Secure Connect SocialQ.zip",
+    'secure_connect_bundle': "Secure_Connect_SocialQ.zip",
     'connect_timeout': 30
 }
 auth_provider=PlainTextAuthProvider("token", os.getenv("ASTRA_DB_APPLICATION_TOKEN"))
@@ -262,3 +256,35 @@ async def get_image(username: str):
 
     except Exception as e:
         return {"error": str(e)}
+
+import soundfile as sf
+model = whisper.load_model("tiny")
+device = "mps"
+@app.post("/video-analysis/")
+async def transcribe_audio(file: UploadFile = File(...)):
+    match = re.search(r"\.(\w+)$", file.filename)
+    if (match.group(1) != "wav"):
+        return {"Error": "Invalid filetype, use .wav"}
+    audio_bytes = await file.read()
+    audio_buffer = io.BytesIO(audio_bytes)
+    audio, _ = sf.read(audio_buffer, dtype="float32")
+
+    result = model.transcribe(audio, fp16=False)
+
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "system",
+                "content": f"You will provide a short recap of the contents and give constructive criticism to the user about their content and where they can improve their social media content, you must talk as if talking with the content creator, second person view also keep it under 200 words.The points should be seperated as seperate paragraph for summary, criticism, pain points and etc. Media: {result["text"]}."
+            }
+        ],
+
+        model="llama-3.3-70b-versatile",
+        temperature=0.7,
+        max_completion_tokens=1024,
+        top_p=1,
+        stop=None,
+        stream=False,
+    )
+
+    return (chat_completion.choices[0].message.content)
