@@ -100,10 +100,10 @@ export default function Hero() {
           </h1>
           <div className="flex justify-center font-bold gap-4 pt-8 md:gap-8">
             <button className="bg-white text-black p-4 rounded-full">
-              Get Started
+              <a href="/user-info">Get Started</a>
             </button>
             <button className="bg-white text-black p-4 rounded-full">
-              Link your account
+              <a href="#pricing">Pricing</a>
             </button>
           </div>
         </div>
