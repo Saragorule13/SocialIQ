@@ -29,7 +29,7 @@ db = dbclient.get_database_by_api_endpoint(
   "https://654d738f-1326-4e94-a2a0-cf79bd1ac826-us-east-2.apps.astra.datastax.com"
 )
 
-client = Groq()
+client_g = Groq()
 # llm = init_chat_model("deepseek-r1-distill-llama-70b", model_provider="groq", api_key=os.getenv("GROQ_API_KEY"))
 
 print(f"Connected to Astra DB: {db.list_collection_names()}")
@@ -70,7 +70,8 @@ async def root(username: str, posts: int):
         result = cursor.find_one({"id": item["id"]})
 
         if (result == None):
-            cursor.insert_one(item, vectorize=item["id"])
+            item["vectorize"] = item["id"]
+            cursor.insert_one(item)
         else:
             print(f"Post is cached already! ({item['id']})")
 
@@ -92,7 +93,7 @@ async def chat(username: str, request: Query):
 
     # print(knowledge)
 
-    chat_completion = client.chat.completions.create(
+    chat_completion = client_g.chat.completions.create(
         messages=[
             {
                 "role": "system",
@@ -129,7 +130,7 @@ async def chat(username: str, request: Query):
 
     # print(knowledge)
 
-    chat_completion = client.chat.completions.create(
+    chat_completion = client_g.chat.completions.create(
         messages=[
             {
                 "role": "system",
@@ -175,7 +176,7 @@ async def analysis(username: str):
         "count_negative": len(negative_scores)
     }
 
-    chat_completion = client.chat.completions.create(
+    chat_completion = client_g.chat.completions.create(
         messages=[
             {
                 "role": "system",
@@ -271,7 +272,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
 
     result = model.transcribe(audio, fp16=False)
 
-    chat_completion = client.chat.completions.create(
+    chat_completion = client_g.chat.completions.create(
         messages=[
             {
                 "role": "system",
