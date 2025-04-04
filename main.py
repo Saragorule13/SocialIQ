@@ -289,3 +289,67 @@ async def transcribe_audio(file: UploadFile = File(...)):
     )
 
     return (chat_completion.choices[0].message.content)
+
+@app.get("/fetch-and-store-profile/{username}")
+async def fetch_and_store_profile(username: str):
+    try:
+        run_input = {"usernames": [username]}
+        run = client.actor("dSCLg0C3YEZ83HzYX").call(run_input=run_input)
+        dataset_id = run.get("defaultDatasetId")
+        if not dataset_id:
+            return {"error": "No dataset ID returned. The actor might not have produced output."}
+
+        results = []
+        for item in client.dataset(dataset_id).iterate_items():
+            if item.get("username") == username:
+                profile_id = item["id"]
+                existing_profile = profile_cursor.find_one({"id": profile_id})
+
+                filtered_item = {
+                    "id": item["id"],
+                    "username": item["username"],
+                    "full_name": item.get("fullName"),
+                    "followersCount": item.get("followersCount"),
+                    "followsCount": item.get("followsCount"),
+                    "biography": item.get("biography"),
+                    "hasChannel": item.get("hasChannel"),
+                    "highlightReelCount": item.get("highlightReelCount"),
+                    "isBusinessAccount": item.get("isBusinessAccount"),
+                    "businessCategoryName": item.get("businessCategoryName"),
+                    "private": item.get("Private"),
+                    "verified": item.get("Verified"),
+                    "profilePicUrl" : item.get("profilePicUrl"),
+                    "profilePicUrlHD": item.get("profilePicUrlHD"),
+                    "igtvVideoCount": item.get("igtvVideoCount"),
+                    "postsCount": item.get("postsCount"),
+                }
+
+                if not existing_profile:
+                    profile_cursor.insert_one(filtered_item)
+                    results.append({"status": "stored", "data": filtered_item})
+                else:
+                    results.append({"status": "already exists", "data": filtered_item})
+
+        if not results:
+            return {"error": "No exact match found for this username."}
+
+        return {"message": "Profile processed successfully", "data": results}
+
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/get-profiles/{username}")
+async def get_profile(username: str):
+    try:
+        # Fetch the profile from the database
+        profile = profile_cursor.find_one({"username": username})
+
+        if not profile:
+            return {"error": "Profile not found."}
+
+        # Convert the profile to a JSON-serializable format
+        profile["_id"] = str(profile["_id"])  # Convert ObjectId to string
+        return {"data": profile}
+
+    except Exception as e:
+        return {"error": str(e)}
