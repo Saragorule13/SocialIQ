@@ -41,7 +41,7 @@ async def fetch_and_store_profile(username: str):
                 filtered_item = {
                     "id": item["id"],
                     "username": item["username"],
-                    "full_name": item.get("full_name"),
+                    "full_name": item.get("fullName"),
                     "followersCount": item.get("followersCount"),
                     "followsCount": item.get("followsCount"),
                     "bio": item.get("biography"),

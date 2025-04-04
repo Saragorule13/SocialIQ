@@ -5,9 +5,12 @@ import { useParams } from "react-router-dom";
 const ProfileCard = () => {
   const username = useParams().username;
   const [profile, setProfile] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
 
   useEffect(() => {
-    axios.get(`http://127.0.0.1:8000/get-profiles/${username}`)
+    // Fetch profile data
+    axios
+      .get(`http://127.0.0.1:8000/get-profiles/${username}`)
       .then((response) => {
         console.log("API Response:", response.data);
         if (response.data.data) {
@@ -17,39 +20,58 @@ const ProfileCard = () => {
       .catch((error) => {
         console.error("Error fetching data:", error);
       });
+
+    // Fetch profile image
+    axios
+      .get(`https://socialiq-568543231418.asia-south1.run.app/image/${username}`, {
+        responseType: "blob", // Ensure the response is treated as a binary blob
+      })
+      .then((response) => {
+        const imageUrl = URL.createObjectURL(response.data); // Convert blob to object URL
+        setProfileImage(imageUrl);
+      })
+      .catch((error) => {
+        console.error("Error fetching profile image:", error);
+      });
   }, [username]);
 
   if (!profile) {
     return <p className="text-center text-gray-500">Loading profile...</p>;
   }
 
-
   return (
-    <div className="flex flex-col md:flex-row p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-md border border-gray-200 dark:border-neutral-700">
+    <div className="flex flex-col md:flex-row items-center p-8 bg-neutral-800 rounded-lg shadow-md border border-gray-700 gap-8">
       {/* Profile Image */}
-      <div className="flex flex-col items-center md:w-1/3">
+      <div className="flex-shrink-0">
         <img
-          src={profile.profilePicUrl}
+          src={profileImage || "https://via.placeholder.com/150"} // Fallback to placeholder if image is not available
           alt="Profile"
-          className="w-32 h-32 rounded-full border-2 border-gray-300"
+          className="w-64 h-64 rounded-full border-4 border-gray-600 shadow-md"
         />
-        <div className="flex mt-2 space-x-2">
-          <a href={profile.url} target="_blank" rel="noopener noreferrer">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-            </svg>
-          </a>
-        </div>
       </div>
 
-      {/* Profile Info */}
-      <div className="flex flex-col md:w-2/3 md:ml-6 text-left">
-        <h2 className="text-xl font-bold">{username}</h2>
-        <h5 className="text-gray-500 text-lg">{profile.fullName}</h5>
-        <p className="text-gray-600 dark:text-gray-400 w-[450px] mt-2">
-          {profile.biography}
+      {/* Greeting and Analysis */}
+      <div className="flex flex-col text-left text-gray-200 space-y-4">
+        <h1 className="text-4xl font-extrabold">
+          Hello, <span className="text-gray-300">{username}</span>!
+        </h1>
+        <p className="text-lg">
+          Your account did{" "}
+          <span className="font-semibold text-green-400">amazing</span> compared
+          to last week. Keep up the fantastic work!
         </p>
+        <p className="text-lg">
+          Engagement rate increased by{" "}
+          <span className="font-semibold text-blue-400">15%</span>.
+        </p>
+        <div className="mt-6 flex gap-4">
+          <button className="px-6 py-3 bg-gray-700 text-white font-semibold rounded-lg shadow-md">
+            View Insights
+          </button>
+          <button className="px-6 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow-md">
+            Edit Profile
+          </button>
+        </div>
       </div>
     </div>
   );

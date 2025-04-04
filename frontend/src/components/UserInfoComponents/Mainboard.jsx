@@ -9,6 +9,24 @@ export default function Mainboard() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const handleInsertUsername = async (username) => {
+    try {
+      const response = await axios.post(
+        "https://socialiq-568543231418.asia-south1.run.app/insert",
+        { "username": {username} } // Send the username in the request body
+      );
+  
+      if (response.data.success) {
+        setAlertMessage(`Username "${username}" inserted successfully.`);
+      } else {
+        setAlertMessage(`Failed to insert username "${username}".`);
+      }
+    } catch (error) {
+      console.error("Error inserting username:", error);
+      setAlertMessage("An error occurred while inserting the username.");
+    }
+  };
+
   // Load accounts from local storage when the component mounts
   useEffect(() => {
     const savedAccounts = localStorage.getItem("accounts");
@@ -37,26 +55,31 @@ export default function Mainboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!username.trim()) {
       setAlertMessage("Please enter a valid username.");
       return;
     }
-
+  
     setLoading(true);
-
+  
     try {
       const existingProfileResponse = await axios.get(
         `http://127.0.0.1:8000/get-profiles/${username}`
       );
-
-      if (existingProfileResponse.data.data.length > 0) {
+  
+      // Check if the response and data are valid
+      if (
+        existingProfileResponse.data &&
+        existingProfileResponse.data.data &&
+        existingProfileResponse.data.data.length > 0
+      ) {
         setAlertMessage("This username already exists in the database.");
       } else {
         const fetchResponse = await axios.get(
           `http://127.0.0.1:8000/fetch-and-store-profile/${username}`
         );
-
+  
         if (fetchResponse.data.error) {
           setAlertMessage(fetchResponse.data.error);
         } else {
@@ -73,8 +96,26 @@ export default function Mainboard() {
     } finally {
       setLoading(false);
     }
-
+  
     setUsername("");
+  };
+  
+
+  const handleFetchPosts = async (username, posts) => {
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:8000/fetch/${username}/${posts}`
+      );
+      if (response.data) {
+        console.log("Fetched Posts:", response.data);
+        setAlertMessage(`Fetched ${posts} posts for "${username}".`);
+      } else {
+        setAlertMessage(`No posts found for "${username}".`);
+      }
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      setAlertMessage("An error occurred while fetching the posts.");
+    }
   };
 
   return (
@@ -99,6 +140,7 @@ export default function Mainboard() {
           type="submit"
           className="bg-white p-2 rounded-md text-black flex items-center justify-center"
           disabled={loading}
+          onClick={() => handleInsertUsername({username})}
         >
           {loading ? (
             <div className="loader border-t-2 border-b-2 border-gray-900 w-4 h-4 rounded-full animate-spin"></div>
@@ -160,12 +202,18 @@ export default function Mainboard() {
                   <td className="px-6 py-4">{account.followsCount || "0"}</td>
                   <td className="px-6 py-4">{account.postsCount || "0"}</td>
                   <td className="px-6 py-4">{account.engagement || "85%"}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 flex gap-2">
                     <button
                       onClick={() => handleDelete(account.username)}
                       className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600"
                     >
                       Delete
+                    </button>
+                    <button
+                      onClick={() => handleFetchPosts(account.username, 5)} // Fetch 5 posts as an example
+                      className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600"
+                    >
+                      Fetch Posts
                     </button>
                   </td>
                 </tr>

@@ -36,7 +36,7 @@ export default function Mainboard() {
       <StatsGrid/>
       <PostCharts profile={profile}/>
       <RecentPostsAnalysis profile={profile}/>
-      <RecentPostsAnalysis profile={profile}/>
+      {/* <RecentPostsAnalysis profile={profile}/> */}
     </div>
   )
 }

@@ -21,6 +21,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import os
 import dotenv
+import requests
+import json
+import base64
 
 dotenv.load_dotenv()
 
@@ -34,10 +37,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = ApifyClient(os.getenv("APIFY_API_TOKEN"))
 dbclient = DataAPIClient("AstraCS:IEsGrZCUZIUTuJXDckHGJWEg:76f5c96c82c3f8cfc1018038ab3fc882457e8c718236b73736904cc26ade0ba1")
 db = dbclient.get_database_by_api_endpoint(
-  "https://654d738f-1326-4e94-a2a0-cf79bd1ac826-us-east-2.apps.astra.datastax.com"
+  "https://654d738f-1326-4e94-a2a0-cf79bd1ac826-.apps.astra.datastax.com"
 )
 client_g = Groq()
 # llm = init_chat_model("deepseek-r1-distill-llama-70b", model_provider="groq", api_key=os.getenv("GROQ_API_KEY"))
@@ -66,11 +71,30 @@ async def fetch_and_store_profile(username: str):
                 profile_id = item["id"] 
                 existing_profile = profiles_collection.find_one({"id": profile_id})
 
+                filtered_item = {
+                    "id": item["id"],
+                    "username": item["username"],
+                    "full_name": item.get("fullName"),
+                    "followersCount": item.get("followersCount"),
+                    "followsCount": item.get("followsCount"),
+                    "biography": item.get("biography"),
+                    "hasChannel": item.get("hasChannel"),
+                    "highlightReelCount": item.get("highlightReelCount"),
+                    "isBusinessAccount": item.get("isBusinessAccount"),
+                    "businessCategoryName": item.get("businessCategoryName"),
+                    "private": item.get("Private"),
+                    "verified": item.get("Verified"),
+                    "profilePicUrl" : item.get("profilePicUrl"),
+                    "profilePicUrlHD": item.get("profilePicUrlHD"),
+                    "igtvVideoCount": item.get("igtvVideoCount"),
+                    "postsCount": item.get("postsCount"),
+                }
+
                 if not existing_profile:  
-                    profiles_collection.insert_one(item)  
-                    results.append({"status": "stored", "data": item})
+                    profiles_collection.insert_one(filtered_item)  
+                    results.append({"status": "stored", "data": filtered_item})
                 else:
-                    results.append({"status": "already exists", "data": item})
+                    results.append({"status": "already exists", "data": filtered_item})
 
         if not results:
             return {"error": "No exact match found for this username."}
@@ -96,43 +120,48 @@ async def get_profile(username: str):
     except Exception as e:
         return {"error": str(e)}
     
-@app.get("/get-data/{username}")
-async def get_data(username: str):
-    documents = cursor.find({"ownerUsername" : [username]})
-    posts = [doc for doc in documents]
-    return {"data" : posts}
-
- 
-
-#to fetch posts
 @app.get("/fetch/{username}/{posts}")
 async def root(username: str, posts: int):
-    run_input = {
-        "directUrls": [f"https://www.instagram.com/{username}/"],
-        "resultsType": "posts",
-        "resultsLimit": posts,
-        "searchType": "hashtag",
-        "searchLimit": 1,
-        "addParentData": False,
-    }
+    try:
+        run_input = {
+            "directUrls": [f"https://www.instagram.com/{username}/"],
+            "resultsType": "posts",
+            "resultsLimit": posts,
+            "searchType": "hashtag",
+            "searchLimit": 1,
+            "addParentData": False,
+        }
 
-    run = client.actor("shu8hvrXbJbY3Eb9W").call(run_input=run_input)
-    for item in client.dataset(run["defaultDatasetId"]).iterate_items():
-        #print(item)
-        #print(type(item))
-        result = cursor.find_one({"id": item["id"]})
+        run = client.actor("shu8hvrXbJbY3Eb9W").call(run_input=run_input)
+        if not run or "defaultDatasetId" not in run:
+            return {"error": "Actor execution failed or no dataset ID returned."}
 
-        if (result == None):
-            cursor.insert_one(item, vectorize=item["id"])
-        else:
-            print(f"Post is cached already! ({item["id"]})")
+        dataset_id = run["defaultDatasetId"]
+        items = list(client.dataset(dataset_id).iterate_items())
+        if not items:
+            return {"error": "No items found in the dataset."}
+
+        for item in items:
+            if "id" not in item:
+                print("Item does not contain an ID:", item)
+                continue
+
+            result = cursor.find_one({"id": item["id"]})
+            if not result:
+                cursor.insert_one(item)  # Removed vectorize argument
+            else:
+                print(f"Post is cached already! ({item['id']})")
+
+        return {"message": "Posts fetched and stored successfully."}
+
+    except Exception as e:
+        return {"error": str(e)}
  
 class Query(BaseModel):
     question: str
     
 
 @app.post("/chat/{username}")
-@app.options("/chat/{username}")
 async def chat(username: str, request: Query):
     results = list(cursor.find({"ownerUsername": username}, projection={"type": True, "caption": True, "commentsCount": True, "alt": True, "likesCount": True, "ownerFullName": True, "videoDuration": True, "videoViewCount": True, "videoPlayCount": True}))
     knowledge = []
@@ -151,7 +180,7 @@ async def chat(username: str, request: Query):
         messages=[
             {
                 "role": "system",
-                "content": f"you will solve the users queries about social media with your data {knowledge}."
+                "content": f"you will solve the users queries about social media with your data {knowledge}. Do not display the data provided, you can reference it and use it in your responses."
             },
             {
                 "role": "user",
@@ -196,7 +225,7 @@ async def analysis(username: str):
         "count_negative": len(negative_scores)
     }
     
-    chat_completion = client.chat.completions.create(
+    chat_completion = client_g.chat.completions.create(
         messages=[
             {
                 "role": "system",
@@ -218,3 +247,39 @@ async def analysis(username: str):
     
     return (chat_completion.choices[0].message.content)
 
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key={GEMINI_API_KEY}"
+
+@app.post("/generate-image/")
+async def generate_image(prompt: dict):
+    """API Endpoint to generate an image from a text prompt."""
+    
+    headers = {"Content-Type": "application/json"}
+    
+    data = {
+        "contents": [{
+            "parts": [
+                {"text": prompt["text"]}
+            ]
+        }],
+        "generationConfig": {"responseModalities": ["Text", "Image"]}
+    }
+
+    response = requests.post(URL, headers=headers, data=json.dumps(data))
+
+    if response.status_code == 200:
+        response_json = response.json()
+        image_data = response_json.get("data", "")
+
+        if image_data:
+            # 🔽 Convert Base64 string to an actual image file
+            image_bytes = base64.decode(image_data)
+
+            # Save the image (optional)
+            with open("generated_image.png", "wb") as img_file:
+                img_file.write(image_bytes)
+
+            return {"image": image_data}  # Base64 format for frontend usage
+        else:
+            return {"error": "No image data found."}
+    
+    return {"error": f"API request failed: {response.status_code}"}
