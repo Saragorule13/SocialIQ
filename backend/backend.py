@@ -42,7 +42,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = ApifyClient(os.getenv("APIFY_API_TOKEN"))
 dbclient = DataAPIClient("AstraCS:IEsGrZCUZIUTuJXDckHGJWEg:76f5c96c82c3f8cfc1018038ab3fc882457e8c718236b73736904cc26ade0ba1")
 db = dbclient.get_database_by_api_endpoint(
-  "https://654d738f-1326-4e94-a2a0-cf79bd1ac826-.apps.astra.datastax.com"
+  "https://654d738f-1326-4e94-a2a0-cf79bd1ac826-us-east-2.apps.astra.datastax.com"
 )
 client_g = Groq()
 # llm = init_chat_model("deepseek-r1-distill-llama-70b", model_provider="groq", api_key=os.getenv("GROQ_API_KEY"))
