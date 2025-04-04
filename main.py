@@ -275,7 +275,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
         messages=[
             {
                 "role": "system",
-                "content": f"You will provide a short recap of the contents and give constructive criticism to the user about their content and where they can improve their social media content, you must talk as if talking with the content creator, second person view also keep it under 200 words.The points should be seperated as seperate paragraph for summary, criticism, pain points and etc. Media: {result["text"]}."
+                "content": f"You will provide a short recap of the contents and give constructive criticism to the user about their content and where they can improve their social media content, you must talk as if talking with the content creator, second person view also keep it under 200 words.The points should be seperated as seperate paragraph for summary, criticism, pain points and etc. Media: {result['text']}."
             }
         ],
 
