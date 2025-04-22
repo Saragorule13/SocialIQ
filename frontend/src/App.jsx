@@ -7,6 +7,7 @@ import Demo from './pages/Demo'
 import Chatbot from './pages/Chatbot'
 import ImageGen from './pages/ImageGen'
 import ContentGen from './pages/ContentGen'
+import ReelAudioAnalyzer from './pages/ReelAnalysis'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path='/chat/:username' element={<Chatbot/>}/>
         <Route path='/image-gen' element={<ImageGen/>}/>
         <Route path='/content-gen' element={<ContentGen/>}/>
+        <Route path='/video-analysis' element={<ReelAudioAnalyzer/>}/>
       </Routes>
     </>
   )

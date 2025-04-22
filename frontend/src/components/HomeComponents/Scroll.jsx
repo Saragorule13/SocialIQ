@@ -16,7 +16,7 @@ export function HeroScrollDemo() {
         }>
         <div className="relative w-full h-full rounded-2xl overflow-hidden">
           <img
-            src="/linear.webp"
+            src="/image.png"
             alt="Hero section with scroll animations"
             className="rounded-2xl object-cover w-full h-full"
             draggable="false"
